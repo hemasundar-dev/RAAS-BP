@@ -19,7 +19,7 @@ RUN npm run build
 FROM nginx:stable-alpine
 
 # Copy custom nginx config
-COPY app/nginx.conf /etc/nginx/nginx.conf
+COPY ./app/nginx.conf /etc/nginx/nginx.conf
 
 # Copy built app to nginx html folder
 COPY --from=builder /app/dist /usr/share/nginx/html
