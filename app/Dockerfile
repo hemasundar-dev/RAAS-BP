@@ -4,13 +4,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY app/package.json app/package-lock.json ./
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm install
 
 # Copy rest of the app
-COPY app/ .
+COPY . .
 
 # Build the app
 RUN npm run build
