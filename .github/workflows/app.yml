@@ -2,32 +2,27 @@ name: Build and Deploy App
 
 on:
   push:
-    paths:
-      - 'app/**'
-      - '!app/.github/**'
     branches:
       - main
-  workflow_dispatch:
-
-env:
-  AWS_REGION: us-east-1
-  ECR_REPOSITORY: raas-app
-  CLUSTER_NAME: raas-eks-cluster
-  DEPLOYMENT_NAME: raas-app
-  CONTAINER_PORT: 80
-  NAMESPACE: dev
 
 jobs:
-  deploy:
-    name: Build, Push, Deploy
+  build-and-deploy:
     runs-on: ubuntu-latest
 
+    env:
+      AWS_REGION: us-east-1
+      ECR_REPOSITORY: raas-app
+      CLUSTER_NAME: raas-eks-cluster
+      DEPLOYMENT_NAME: raas-app
+      CONTAINER_PORT: 80
+      NAMESPACE: dev
+
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v3
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -37,23 +32,17 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build, Tag, and Push Image to ECR
-        working-directory: app
+      - name: Build and Push Docker image
+        working-directory: ./app
         run: |
           docker build -f Dockerfile -t ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest .
           docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Update kubeconfig
         run: |
-          aws eks update-kubeconfig --name ${{ env.CLUSTER_NAME }} --region ${{ env.AWS_REGION }}
+          aws eks update-kubeconfig --region ${{ env.AWS_REGION }} --name ${{ env.CLUSTER_NAME }}
 
-      - name: Deploy Kubernetes Manifests
-        working-directory: app/k8s
+      - name: Deploy to EKS
         run: |
-          kubectl apply -f namespace.yaml
-          kubectl apply -f deployment.yaml
-          kubectl apply -f service.yaml
-
-      - name: Update deployment image dynamically
-        run: |
-          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} raas-container=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest -n ${{ env.NAMESPACE }}
+          kubectl set image deployment/${{ env.DEPLOYMENT_NAME }} ${{ env.DEPLOYMENT_NAME }}=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest -n ${{ env.NAMESPACE }}
+          kubectl rollout status deployment/${{ env.DEPLOYMENT_NAME }} -n ${{ env.NAMESPACE }}
