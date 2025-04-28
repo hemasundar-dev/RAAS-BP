@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: raas-app
-  namespace: dev   # Change to prod if needed
+  namespace: dev   # or prod if needed
   labels:
     app: raas
 spec:
@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: raas-container
-        image: <your_ecr_repo_url>:latest
+        image: raas-app:latest  # << Just a dummy local name
         ports:
         - containerPort: 80
         resources:
