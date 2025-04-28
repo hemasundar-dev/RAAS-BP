@@ -1,26 +1,28 @@
-# Build Stage
+# --- Stage 1: Build React App ---
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Install deps
+# Copy only package files first for caching
 COPY package.json package-lock.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy all source code
+# Copy the rest of the application
 COPY . .
 
-# Build the app
+# Build the React app
 RUN npm run build
 
-# Production Stage
+# --- Stage 2: Serve with Nginx ---
 FROM nginx:stable-alpine
 
-# Copy built assets to nginx's default public directory
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy custom nginx config
+COPY app/nginx.conf /etc/nginx/nginx.conf
 
-# Copy default nginx config
-COPY nginx.conf /etc/nginx/nginx.conf
+# Copy built app to nginx html folder
+COPY --from=builder /app/dist /usr/share/nginx/html
 
 # Expose port 80
 EXPOSE 80
