@@ -25,9 +25,6 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy built assets from builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# If you have a custom nginx.conf, copy it; otherwise, default will be used
-COPY --from=builder /app/nginx.conf /etc/nginx/nginx.conf
-
 # Expose port 80
 EXPOSE 80
 
