@@ -4,13 +4,13 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json ./
+COPY app/package.json app/package-lock.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy rest of the source code
-COPY . .
+# Copy all source files
+COPY app .
 
 # Build the app
 RUN npm run build
@@ -18,11 +18,11 @@ RUN npm run build
 # --- Stage 2: Serve with nginx ---
 FROM nginx:stable-alpine
 
-# Copy only necessary files from builder stage
+# Copy built app
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Now manually copy nginx.conf from builder
-COPY --from=builder /app/app/nginx.conf /etc/nginx/nginx.conf
+# Copy custom nginx.conf
+COPY app/nginx.conf /etc/nginx/nginx.conf
 
 EXPOSE 80
 
